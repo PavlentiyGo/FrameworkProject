@@ -39,6 +39,7 @@ def get_service_status(purchase_year, service_interval, current_condition):
     if current_condition == "требует обслуживания" or service_is_due:
         return "Рекомендуется провести техническое обслуживание"
     return "Техническое обслуживание пока не требуется"
+
 saved_login = "owner@example.com"
 saved_password = "home2026"
 entered_login = "owner@example.com"
@@ -51,9 +52,9 @@ model = "ХМ-4425"
 room_name = "Кухня"
 condition = "требует обслуживания"
 
-purchase_year = int("2022")
-service_interval = int("3")
-price = float("45990.50")
+purchase_year = 2022
+service_interval = 3
+price = 45990.50
 
 print("СЕРВИС УЧЕТА БЫТОВОЙ ТЕХНИКИ")
 
