@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "Холодильник на кухне",
+    "device_type": "Холодильник",
+    "manufacturer": "Atlant",
+    "model": "ХМ-4425",
+    "purchase_year": 2022,
+    "price": 45990.5,
+    "room_name": "Кухня",
+    "condition": "требует обслуживания",
+    "service_interval": 3
+  },
+  {
+    "id": 2,
+    "name": "Телевизор в гостиной",
+    "device_type": "Телевизор",
+    "manufacturer": "Samsung",
+    "model": "UE43AU7100U",
+    "purchase_year": 2024,
+    "price": 52990.0,
+    "room_name": "Гостиная",
+    "condition": "исправно",
+    "service_interval": 5
+  },
+  {
+    "id": 3,
+    "name": "Стиральная машина в ванной",
+    "device_type": "Стиральная машина",
+    "manufacturer": "LG",
+    "model": "F2V3GS6W",
+    "purchase_year": 2023,
+    "price": 47990.0,
+    "room_name": "Ванная",
+    "condition": "в ремонте",
+    "service_interval": 4
+  }
+]

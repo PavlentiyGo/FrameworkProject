@@ -1,0 +1,16 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    ".git",
+    ".idea",
+    ".pytest_cache",
+    ".venv",
+    "__pycache__"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.10",
+  "typeCheckingMode": "standard"
+}
