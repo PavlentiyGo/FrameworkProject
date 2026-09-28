@@ -1,34 +1,38 @@
-
 import pytest
 
-from devices import Device
+from models import Device, Room
 
 
 @pytest.fixture
-def sample_devices() -> list[Device]:
+def sample_rooms() -> list[Room]:
+    return [Room(1, "Кухня"), Room(2, "Гостиная")]
+
+
+@pytest.fixture
+def sample_devices(sample_rooms: list[Room]) -> list[Device]:
     return [
-        {
-            "id": 1,
-            "name": "Холодильник",
-            "device_type": "Крупная техника",
-            "manufacturer": "Atlant",
-            "model": "ХМ-4425",
-            "purchase_year": 2022,
-            "price": 45990.5,
-            "room_name": "Кухня",
-            "condition": "требует обслуживания",
-            "service_interval": 3,
-        },
-        {
-            "id": 2,
-            "name": "Телевизор",
-            "device_type": "Электроника",
-            "manufacturer": "Samsung",
-            "model": "UE43",
-            "purchase_year": 2024,
-            "price": 52990.0,
-            "room_name": "Гостиная",
-            "condition": "исправно",
-            "service_interval": 5,
-        },
+        Device(
+            1,
+            "Холодильник",
+            "Крупная техника",
+            "Atlant",
+            "ХМ-4425",
+            2022,
+            45990.5,
+            sample_rooms[0],
+            "требует обслуживания",
+            3,
+        ),
+        Device(
+            2,
+            "Телевизор",
+            "Электроника",
+            "Samsung",
+            "UE43",
+            2024,
+            52990.0,
+            sample_rooms[1],
+            "исправно",
+            5,
+        ),
     ]

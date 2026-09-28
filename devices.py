@@ -2,15 +2,9 @@ from collections.abc import Iterator
 from datetime import date
 from typing import Any
 
+from models import CONDITIONS, Device, Room
 
-Device = dict[str, Any]
 
-CONDITIONS = (
-    "исправно",
-    "требует обслуживания",
-    "в ремонте",
-    "списано",
-)
 SORT_FIELDS = {
     "name": "названию",
     "purchase_year": "году покупки",
@@ -19,7 +13,22 @@ SORT_FIELDS = {
 
 
 def _next_device_id(devices: list[Device]) -> int:
-    return max((int(device["id"]) for device in devices), default=0) + 1
+    return max((device.id for device in devices), default=0) + 1
+
+
+def get_or_create_room(rooms: list[Room], name: str) -> tuple[Room, bool]:
+    normalized_name = name.strip().casefold()
+    if not normalized_name:
+        raise ValueError("Название помещения не может быть пустым")
+
+    for room in rooms:
+        if room.name.casefold() == normalized_name:
+            return room, False
+
+    next_id = max((room.id for room in rooms), default=0) + 1
+    room = Room(next_id, name)
+    rooms.append(room)
+    return room, True
 
 
 def add_device(
@@ -30,42 +39,29 @@ def add_device(
     model: str,
     purchase_year: int,
     price: float,
-    room_name: str,
+    room: Room,
     condition: str = "исправно",
     service_interval: int = 3,
 ) -> Device:
-    current_year = date.today().year
-    text_values = (name, device_type, manufacturer, model, room_name)
-    if any(not value.strip() for value in text_values):
-        raise ValueError("Текстовые поля устройства не могут быть пустыми")
-    if purchase_year < 1900 or purchase_year > current_year:
-        raise ValueError("Указан некорректный год покупки")
-    if price < 0:
-        raise ValueError("Стоимость не может быть отрицательной")
-    if service_interval <= 0:
-        raise ValueError("Интервал обслуживания должен быть положительным")
-    if condition not in CONDITIONS:
-        raise ValueError("Указано неизвестное состояние устройства")
-
-    device = {
-        "id": _next_device_id(devices),
-        "name": name.strip(),
-        "device_type": device_type.strip(),
-        "manufacturer": manufacturer.strip(),
-        "model": model.strip(),
-        "purchase_year": purchase_year,
-        "price": round(price, 2),
-        "room_name": room_name.strip(),
-        "condition": condition,
-        "service_interval": service_interval,
-    }
+    device = Device(
+        device_id=_next_device_id(devices),
+        name=name,
+        device_type=device_type,
+        manufacturer=manufacturer,
+        model=model,
+        purchase_year=purchase_year,
+        price=price,
+        room=room,
+        condition=condition,
+        service_interval=service_interval,
+    )
     devices.append(device)
     return device
 
 
 def get_device(devices: list[Device], device_id: int) -> Device:
     for device in devices:
-        if device["id"] == device_id:
+        if device.id == device_id:
             return device
     raise LookupError(f"Устройство с ID {device_id} не найдено")
 
@@ -75,13 +71,18 @@ def find_devices(devices: list[Device], query: str) -> list[Device]:
     if not normalized_query:
         return []
 
-    fields = ("name", "device_type", "manufacturer", "model", "room_name")
     return [
         device
         for device in devices
         if any(
-            normalized_query in str(device[field]).casefold()
-            for field in fields
+            normalized_query in value.casefold()
+            for value in (
+                device.name,
+                device.device_type,
+                device.manufacturer,
+                device.model,
+                device.room.name,
+            )
         )
     ]
 
@@ -92,9 +93,7 @@ def filter_devices_by_condition(
 ) -> list[Device]:
     if condition not in CONDITIONS:
         raise ValueError("Указано неизвестное состояние устройства")
-    return [
-        device for device in devices if device["condition"] == condition
-    ]
+    return [device for device in devices if device.condition == condition]
 
 
 def sort_devices(
@@ -104,13 +103,22 @@ def sort_devices(
 ) -> list[Device]:
     if field not in SORT_FIELDS:
         raise ValueError("Указано неизвестное поле сортировки")
+
+    if field == "name":
+        return sorted(
+            devices,
+            key=lambda device: device.name.casefold(),
+            reverse=reverse,
+        )
+    if field == "purchase_year":
+        return sorted(
+            devices,
+            key=lambda device: device.purchase_year,
+            reverse=reverse,
+        )
     return sorted(
         devices,
-        key=lambda device: (
-            str(device[field]).casefold()
-            if field == "name"
-            else device[field]
-        ),
+        key=lambda device: device.price,
         reverse=reverse,
     )
 
@@ -118,12 +126,10 @@ def sort_devices(
 def assign_device_to_room(
     devices: list[Device],
     device_id: int,
-    room_name: str,
+    room: Room,
 ) -> Device:
-    if not room_name.strip():
-        raise ValueError("Название помещения не может быть пустым")
     device = get_device(devices, device_id)
-    device["room_name"] = room_name.strip()
+    device.assign_to_room(room)
     return device
 
 
@@ -132,42 +138,9 @@ def update_device_condition(
     device_id: int,
     new_condition: str,
 ) -> Device:
-    if new_condition not in CONDITIONS:
-        raise ValueError("Указано неизвестное состояние устройства")
     device = get_device(devices, device_id)
-    device["condition"] = new_condition
+    device.change_condition(new_condition)
     return device
-
-
-def is_device_available(devices: list[Device], device_id: int) -> bool:
-    return get_device(devices, device_id)["condition"] == "исправно"
-
-
-def get_service_status(
-    purchase_year: int,
-    service_interval: int,
-    current_condition: str,
-    current_year: int | None = None,
-) -> str:
-    year = current_year if current_year is not None else date.today().year
-    if purchase_year > year:
-        raise ValueError("Год покупки не может быть позднее текущего года")
-    if service_interval <= 0:
-        raise ValueError("Интервал обслуживания должен быть положительным")
-    if current_condition not in CONDITIONS:
-        raise ValueError("Указано неизвестное состояние устройства")
-
-    if current_condition == "списано":
-        return "Устройство снято с эксплуатации"
-    if current_condition == "в ремонте":
-        return "Диагностика уже выполняется"
-    device_age = year - purchase_year
-    if (
-        current_condition == "требует обслуживания"
-        or device_age >= service_interval
-    ):
-        return "Рекомендуется провести техническое обслуживание"
-    return "Техническое обслуживание пока не требуется"
 
 
 def iter_devices_due_for_service(
@@ -175,13 +148,7 @@ def iter_devices_due_for_service(
     current_year: int | None = None,
 ) -> Iterator[Device]:
     for device in devices:
-        status = get_service_status(
-            device["purchase_year"],
-            device["service_interval"],
-            device["condition"],
-            current_year,
-        )
-        if status.startswith("Рекомендуется"):
+        if device.get_service_status(current_year).startswith("Рекомендуется"):
             yield device
 
 
@@ -202,21 +169,17 @@ def get_device_statistics(
     total_age = 0
 
     for device in devices:
-        condition = str(device["condition"])
-        room_name = str(device["room_name"])
-        by_condition[condition] = by_condition.get(condition, 0) + 1
-        by_room[room_name] = by_room.get(room_name, 0) + 1
-        total_value += float(device["price"])
-        total_age += year - int(device["purchase_year"])
+        by_condition[device.condition] += 1
+        by_room[device.room.name] = by_room.get(device.room.name, 0) + 1
+        total_value += device.price
+        total_age += year - device.purchase_year
 
     count = len(devices)
     return {
         "count": count,
         "total_value": round(total_value, 2),
         "average_age": round(total_age / count, 1) if count else 0.0,
-        "available_count": sum(
-            device["condition"] == "исправно" for device in devices
-        ),
+        "available_count": sum(device.is_available() for device in devices),
         "service_due_count": sum(
             1 for _ in iter_devices_due_for_service(devices, year)
         ),

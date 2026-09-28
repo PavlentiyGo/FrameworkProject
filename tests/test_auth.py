@@ -1,10 +1,15 @@
-
 from auth import authorize_user
+from models import User
 
 
 def test_authorize_user_accepts_correct_credentials() -> None:
-    assert authorize_user("owner", "secret", "owner", "secret")
+    user = User(1, "owner", "secret")
+
+    assert authorize_user([user], "owner", "secret") is user
 
 
 def test_authorize_user_rejects_wrong_password() -> None:
-    assert not authorize_user("owner", "secret", "owner", "wrong")
+    user = User(1, "owner", "secret")
+
+    assert authorize_user([user], "owner", "wrong") is None
+    assert "secret" not in str(user)

@@ -3,28 +3,33 @@ from pathlib import Path
 
 from auth import authorize_user
 from devices import (
-    CONDITIONS,
     SORT_FIELDS,
-    Device,
     add_device,
     assign_device_to_room,
     filter_devices_by_condition,
     find_devices,
     get_device,
     get_device_statistics,
-    get_service_status,
-    is_device_available,
+    get_or_create_room,
     remove_device,
     sort_devices,
     update_device_condition,
 )
-from storage import load_devices, save_devices
+from models import CONDITIONS, Device, Room, User
+from storage import (
+    load_devices,
+    load_rooms,
+    load_users,
+    save_devices,
+    save_rooms,
+)
 from utils import input_choice, input_float, input_int, input_non_empty
 
 
-DATA_FILE = Path(__file__).parent / "data" / "devices.json"
-SAVED_LOGIN = "owner@example.com"
-SAVED_PASSWORD = "home2026"
+DATA_DIRECTORY = Path(__file__).parent / "data"
+DEVICES_FILE = DATA_DIRECTORY / "devices.json"
+ROOMS_FILE = DATA_DIRECTORY / "rooms.json"
+USERS_FILE = DATA_DIRECTORY / "users.json"
 
 MENU = """
 === Сервис учёта бытовой техники ===
@@ -53,21 +58,26 @@ def show_devices(devices: list[Device]) -> None:
     print("-" * 106)
     for device in devices:
         print(
-            f"{device['id']:<4} {device['name']:<24.24} "
-            f"{device['device_type']:<18.18} "
-            f"{device['room_name']:<16.16} "
-            f"{device['condition']:<24.24} "
-            f"{device['price']:>10.2f} ₽"
+            f"{device.id:<4} {device.name:<24.24} "
+            f"{device.device_type:<18.18} "
+            f"{device.room.name:<16.16} "
+            f"{device.condition:<24.24} "
+            f"{device.price:>10.2f} ₽"
         )
 
 
-def _save(devices: list[Device]) -> None:
-    save_devices(DATA_FILE, devices)
+def _save(devices: list[Device], rooms: list[Room]) -> None:
+    save_devices(DEVICES_FILE, devices)
+    save_rooms(ROOMS_FILE, rooms)
     print("Изменения сохранены.")
 
 
-def _add_device(devices: list[Device]) -> None:
+def _add_device(devices: list[Device], rooms: list[Room]) -> None:
     current_year = date.today().year
+    room, _ = get_or_create_room(
+        rooms,
+        input_non_empty("Помещение: "),
+    )
     device = add_device(
         devices,
         input_non_empty("Название: "),
@@ -76,13 +86,13 @@ def _add_device(devices: list[Device]) -> None:
         input_non_empty("Модель: "),
         input_int("Год покупки: ", 1900, current_year),
         input_float("Стоимость: ", 0),
-        input_non_empty("Помещение: "),
+        room,
         service_interval=input_int(
             "Интервал обслуживания в годах: ", 1
         ),
     )
-    _save(devices)
-    print(f"Устройство «{device['name']}» добавлено с ID {device['id']}.")
+    _save(devices, rooms)
+    print(f"Устройство «{device.name}» добавлено с ID {device.id}.")
 
 
 def _find_devices(devices: list[Device]) -> None:
@@ -111,15 +121,18 @@ def _sort_devices(devices: list[Device]) -> None:
     )
 
 
-def _assign_room(devices: list[Device]) -> None:
+def _assign_room(devices: list[Device], rooms: list[Room]) -> None:
     device_id = input_int("ID устройства: ", 1)
-    room_name = input_non_empty("Новое помещение: ")
-    device = assign_device_to_room(devices, device_id, room_name)
-    _save(devices)
-    print(f"Устройство «{device['name']}» размещено в «{room_name}».")
+    room, _ = get_or_create_room(
+        rooms,
+        input_non_empty("Новое помещение: "),
+    )
+    device = assign_device_to_room(devices, device_id, room)
+    _save(devices, rooms)
+    print(f"Устройство «{device.name}» размещено в «{room.name}».")
 
 
-def _update_condition(devices: list[Device]) -> None:
+def _update_condition(devices: list[Device], rooms: list[Room]) -> None:
     device_id = input_int("ID устройства: ", 1)
     for number, condition in enumerate(CONDITIONS, start=1):
         print(f"{number}. {condition}")
@@ -129,40 +142,34 @@ def _update_condition(devices: list[Device]) -> None:
         device_id,
         CONDITIONS[number - 1],
     )
-    _save(devices)
-    print(f"Состояние устройства «{device['name']}» обновлено.")
+    _save(devices, rooms)
+    print(f"Состояние устройства «{device.name}» обновлено.")
 
 
 def _show_status(devices: list[Device]) -> None:
-    device_id = input_int("ID устройства: ", 1)
-    device = get_device(devices, device_id)
+    device = get_device(devices, input_int("ID устройства: ", 1))
     availability = (
         "доступно к эксплуатации"
-        if is_device_available(devices, device_id)
+        if device.is_available()
         else "недоступно к обычной эксплуатации"
     )
-    service_status = get_service_status(
-        device["purchase_year"],
-        device["service_interval"],
-        device["condition"],
-    )
-    print(f"Устройство «{device['name']}» {availability}.")
-    print(service_status)
+    print(f"Устройство «{device.name}» {availability}.")
+    print(device.get_service_status())
 
 
-def _remove_device(devices: list[Device]) -> None:
+def _remove_device(devices: list[Device], rooms: list[Room]) -> None:
     device_id = input_int("ID устройства: ", 1)
     device = get_device(devices, device_id)
     confirmation = input_choice(
-        f"Снять «{device['name']}» с учёта? (да/нет): ",
+        f"Снять «{device.name}» с учёта? (да/нет): ",
         ("да", "нет"),
     )
     if confirmation == "нет":
         print("Операция отменена.")
         return
     remove_device(devices, device_id)
-    _save(devices)
-    print(f"Устройство «{device['name']}» снято с учёта.")
+    _save(devices, rooms)
+    print(f"Устройство «{device.name}» снято с учёта.")
 
 
 def _show_statistics(devices: list[Device]) -> None:
@@ -180,35 +187,38 @@ def _show_statistics(devices: list[Device]) -> None:
         print(f"  {room_name}: {count}")
 
 
-def _authenticate() -> bool:
+def _authenticate(users: list[User]) -> User | None:
     print("Для входа введите данные владельца.")
     login = input_non_empty("Логин: ")
     password = input_non_empty("Пароль: ")
-    return authorize_user(SAVED_LOGIN, SAVED_PASSWORD, login, password)
+    return authorize_user(users, login, password)
 
 
 def main() -> None:
-    if not _authenticate():
-        print("Ошибка авторизации: проверьте логин и пароль.")
-        return
-
     try:
-        devices = load_devices(DATA_FILE)
+        users = load_users(USERS_FILE)
+        rooms = load_rooms(ROOMS_FILE)
+        devices = load_devices(DEVICES_FILE, rooms)
     except RuntimeError as error:
         print(f"Ошибка загрузки данных: {error}")
         return
 
-    print("Авторизация выполнена успешно.")
+    user = _authenticate(users)
+    if user is None:
+        print("Ошибка авторизации: проверьте логин и пароль.")
+        return
+
+    print(f"Авторизация выполнена успешно: {user.login}.")
     actions = {
         "1": lambda: show_devices(devices),
-        "2": lambda: _add_device(devices),
+        "2": lambda: _add_device(devices, rooms),
         "3": lambda: _find_devices(devices),
         "4": lambda: _filter_devices(devices),
         "5": lambda: _sort_devices(devices),
-        "6": lambda: _assign_room(devices),
-        "7": lambda: _update_condition(devices),
+        "6": lambda: _assign_room(devices, rooms),
+        "7": lambda: _update_condition(devices, rooms),
         "8": lambda: _show_status(devices),
-        "9": lambda: _remove_device(devices),
+        "9": lambda: _remove_device(devices, rooms),
         "10": lambda: _show_statistics(devices),
     }
 
