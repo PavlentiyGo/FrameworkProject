@@ -4,6 +4,7 @@ from devices import (
     add_device,
     assign_device_to_room,
     filter_devices_by_condition,
+    find_room_by_id,
     find_devices,
     get_device_statistics,
     get_or_create_room,
@@ -94,6 +95,11 @@ def test_get_or_create_room_reuses_existing_room(
 
     assert room is sample_rooms[0]
     assert not created
+
+
+def test_find_room_by_id(sample_rooms: list[Room]) -> None:
+    assert find_room_by_id(sample_rooms, 2) is sample_rooms[1]
+    assert find_room_by_id(sample_rooms, 999) is None
 
 
 def test_missing_device_raises_domain_error(

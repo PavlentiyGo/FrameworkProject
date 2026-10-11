@@ -31,6 +31,14 @@ def get_or_create_room(rooms: list[Room], name: str) -> tuple[Room, bool]:
     return room, True
 
 
+def find_room_by_id(rooms: list[Room], room_id: int) -> Room | None:
+    """Найти помещение по идентификатору."""
+    for room in rooms:
+        if room.id == room_id:
+            return room
+    return None
+
+
 def add_device(
     devices: list[Device],
     name: str,
