@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Устройства · Учёт техники{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Устройства</h1>
+    <p class="text-secondary">Всего устройств: {{ devices|length }}</p>
+    <div class="device-list">
+        {% for device in devices %}
+            {% include "equipment/includes/device_card.html" with device=device only %}
+        {% empty %}
+            <div class="alert alert-info" role="status">Устройства не найдены.</div>
+        {% endfor %}
+    </div>
+{% endblock %}

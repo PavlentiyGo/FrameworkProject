@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Главная · Учёт техники{% endblock %}
+
+{% block content %}
+    <section class="home-intro p-4 p-md-5 mb-4">
+        <h1 class="display-5 fw-bold">Сервис учёта бытовой техники</h1>
+        <p class="lead">
+            Веб-интерфейс для просмотра устройств, их состояния
+            и размещения по помещениям.
+        </p>
+        <p>Выберите устройство, чтобы узнать его характеристики и рекомендации по обслуживанию, или откройте помещение, чтобы увидеть размещённую в нём технику.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'equipment:device_list' %}" class="btn btn-primary">Устройства</a>
+            <a href="{% url 'rooms:room_list' %}" class="btn btn-outline-secondary">Помещения</a>
+        </div>
+    </section>
+{% endblock %}

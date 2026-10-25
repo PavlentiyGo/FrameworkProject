@@ -1,0 +1,9 @@
+{% if condition == "исправно" %}
+    <span class="badge device-condition condition-working">{{ condition }}</span>
+{% elif condition == "требует обслуживания" %}
+    <span class="badge device-condition condition-service">{{ condition }}</span>
+{% elif condition == "в ремонте" %}
+    <span class="badge device-condition condition-repair">{{ condition }}</span>
+{% else %}
+    <span class="badge device-condition condition-retired">{{ condition|default:"Не указано" }}</span>
+{% endif %}

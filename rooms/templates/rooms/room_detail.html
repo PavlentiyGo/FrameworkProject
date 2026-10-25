@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}{% if room %}{{ room.name }}{% else %}Помещение не найдено{% endif %} · Учёт техники{% endblock %}
+
+{% block content %}
+    {% if room %}
+        <h1 class="mb-3">{{ room.name }}</h1>
+        <div class="card room-card shadow-sm mb-4">
+            <div class="card-body">
+                <p class="card-text"><strong>ID:</strong> {{ room.id }}</p>
+                <p class="card-text mb-0"><strong>Устройств в помещении:</strong> {{ devices|length }}</p>
+            </div>
+        </div>
+        <h2 class="h4 mb-3">Устройства в помещении</h2>
+        {% for device in devices %}
+            {% include "equipment/includes/device_card.html" with device=device only %}
+        {% empty %}
+            <div class="alert alert-info" role="status">Устройств пока нет.</div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-danger" role="alert">
+            <h1>Помещение не найдено</h1>
+            <p class="mb-0">Помещение с указанным идентификатором отсутствует.</p>
+        </div>
+    {% endif %}
+    <a href="{% url 'rooms:room_list' %}" class="btn btn-outline-secondary mt-3">К списку помещений</a>
+{% endblock %}

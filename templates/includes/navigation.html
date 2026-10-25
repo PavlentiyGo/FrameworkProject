@@ -1,0 +1,28 @@
+{% load static %}
+<nav class="navbar navbar-expand bg-dark mb-4" data-bs-theme="dark" aria-label="Основная навигация">
+    <div class="container site-navigation">
+        <a class="navbar-brand" href="{% url 'homepage:index' %}">
+            <img src="{% static 'homepage/img/logo.svg' %}" alt="" width="32" height="32" class="site-logo">
+            Учёт техники
+        </a>
+        {% with current_app=request.resolver_match.app_name %}
+            <div class="navbar-nav flex-wrap">
+                <a
+                    class="nav-link{% if current_app == 'homepage' %} active{% endif %}"
+                    href="{% url 'homepage:index' %}"
+                    {% if current_app == 'homepage' %}aria-current="page"{% endif %}
+                >Главная</a>
+                <a
+                    class="nav-link{% if current_app == 'equipment' %} active{% endif %}"
+                    href="{% url 'equipment:device_list' %}"
+                    {% if current_app == 'equipment' %}aria-current="page"{% endif %}
+                >Устройства</a>
+                <a
+                    class="nav-link{% if current_app == 'rooms' %} active{% endif %}"
+                    href="{% url 'rooms:room_list' %}"
+                    {% if current_app == 'rooms' %}aria-current="page"{% endif %}
+                >Помещения</a>
+            </div>
+        {% endwith %}
+    </div>
+</nav>

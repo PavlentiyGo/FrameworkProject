@@ -1,0 +1,117 @@
+:root {
+    --site-background: #f8f9fa;
+    --site-border: #dee2e6;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--site-background);
+    color: #212529;
+    font-family: system-ui, sans-serif;
+}
+
+.site-content {
+    flex: 1;
+    padding-bottom: 2rem;
+}
+
+.site-navigation {
+    gap: 0.5rem 1rem;
+    flex-wrap: wrap;
+}
+
+.site-logo {
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.home-intro {
+    background-color: #fff;
+    border: 1px solid var(--site-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 0.125rem 0.25rem rgb(0 0 0 / 5%);
+}
+
+.room-card,
+.device-card {
+    border-color: var(--site-border);
+    border-radius: 0.75rem;
+    overflow-wrap: anywhere;
+}
+
+.room-card {
+    border-top: 3px solid #0d6efd;
+}
+
+.device-card .card-title a {
+    color: #212529;
+    text-decoration: none;
+}
+
+.device-card .card-title a:hover {
+    text-decoration: underline;
+}
+
+.device-condition {
+    padding: 0.5em 0.75em;
+    font-weight: 600;
+    white-space: normal;
+    text-align: left;
+}
+
+.condition-working {
+    color: #fff;
+    background-color: #146c43;
+}
+
+.condition-service {
+    color: #332701;
+    background-color: #ffda6a;
+}
+
+.condition-repair {
+    color: #fff;
+    background-color: #b02a37;
+}
+
+.condition-retired {
+    color: #fff;
+    background-color: #565e64;
+}
+
+.device-properties dd {
+    margin-bottom: 0.75rem;
+}
+
+.site-footer {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    color: #6c757d;
+    border-top: 1px solid var(--site-border);
+}
+
+.site-footer p {
+    margin: 0;
+}
+
+.skip-link {
+    position: absolute;
+    top: -5rem;
+    left: 1rem;
+    z-index: 10;
+    padding: 0.75rem;
+    background-color: #fff;
+    color: #0d6efd;
+}
+
+.skip-link:focus {
+    top: 0.5rem;
+}
+
+@media (max-width: 575px) {
+    .site-navigation {
+        justify-content: flex-start !important;
+    }
+}

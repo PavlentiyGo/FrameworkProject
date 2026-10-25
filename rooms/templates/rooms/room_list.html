@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Помещения · Учёт техники{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Помещения</h1>
+    <p class="text-secondary">Всего помещений: {{ rooms|length }}</p>
+    <div class="row">
+        {% for card in room_cards %}
+            <div class="col-md-6 col-lg-4">
+                {% include "rooms/includes/room_card.html" with room=card.room device_count=card.device_count only %}
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info" role="status">Помещения не найдены.</div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

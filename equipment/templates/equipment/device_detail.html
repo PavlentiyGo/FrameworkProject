@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}{% if device %}{{ device.name }}{% else %}Устройство не найдено{% endif %} · Учёт техники{% endblock %}
+
+{% block content %}
+    {% if device %}
+        <h1 class="mb-3">{{ device.name }}</h1>
+        <div class="card device-card shadow-sm">
+            <div class="card-body">
+                <dl class="row mb-0 device-properties">
+                    <dt class="col-sm-4">ID</dt>
+                    <dd class="col-sm-8">{{ device.id }}</dd>
+                    <dt class="col-sm-4">Тип</dt>
+                    <dd class="col-sm-8">{{ device.device_type }}</dd>
+                    <dt class="col-sm-4">Производитель и модель</dt>
+                    <dd class="col-sm-8">{{ device.manufacturer }} {{ device.model }}</dd>
+                    <dt class="col-sm-4">Год покупки</dt>
+                    <dd class="col-sm-8">{{ device.purchase_year|stringformat:"d" }}</dd>
+                    <dt class="col-sm-4">Стоимость</dt>
+                    <dd class="col-sm-8">{{ device.price|floatformat:"2" }} ₽</dd>
+                    <dt class="col-sm-4">Помещение</dt>
+                    <dd class="col-sm-8">
+                        <a href="{% url 'rooms:room_detail' device.room.id %}">{{ device.room.name }}</a>
+                    </dd>
+                    <dt class="col-sm-4">Состояние</dt>
+                    <dd class="col-sm-8">
+                        {% include "equipment/includes/device_condition.html" with condition=device.condition only %}
+                    </dd>
+                    <dt class="col-sm-4">Доступность</dt>
+                    <dd class="col-sm-8">{% if is_available %}Доступно для использования{% else %}Недоступно для использования{% endif %}</dd>
+                    <dt class="col-sm-4">Обслуживание</dt>
+                    <dd class="col-sm-8">{{ service_status }}</dd>
+                </dl>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-danger" role="alert">
+            <h1>Устройство не найдено</h1>
+            <p class="mb-0">Устройство с указанным идентификатором отсутствует.</p>
+        </div>
+    {% endif %}
+    <a href="{% url 'equipment:device_list' %}" class="btn btn-outline-secondary mt-3">К списку устройств</a>
+{% endblock %}
