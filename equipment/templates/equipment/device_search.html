@@ -11,12 +11,13 @@
         <a href="{% url 'equipment:device_search' %}" class="btn btn-outline-secondary">Сбросить</a></div>
     </form>
     {% if searched %}
-        <p>Найдено устройств: {{ devices|length }}</p>
+        <p>Найдено устройств: {{ page_obj.paginator.count }}</p>
         {% for device in devices %}
             {% include "equipment/includes/device_card.html" with device=device only %}
         {% empty %}
             <div class="alert alert-info" role="status">По заданным условиям устройства не найдены.</div>
         {% endfor %}
+        {% include "includes/pagination.html" with page_obj=page_obj query_string=query_string only %}
     {% elif not form.is_bound %}
         <p>Задайте условия поиска и нажмите «Найти». Пустые поля не ограничивают выборку.</p>
     {% endif %}

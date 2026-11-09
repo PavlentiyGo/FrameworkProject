@@ -46,7 +46,7 @@
     <p class="text-secondary">По состоянию устройства или возрасту с учётом интервала обслуживания. Устройства в ремонте и списанные исключены.</p>
     <ul>
         {% for device in service_due %}
-            <li><a href="{% url 'equipment:device_detail' device.id %}">{{ device.name }}</a> — {{ device.room_name }}</li>
+            <li><a href="{% url 'equipment:device_detail' device.id %}">{{ device.name }}</a> — {{ device.room.name }}</li>
         {% empty %}
             <li>Нет устройств, требующих обслуживания.</li>
         {% endfor %}

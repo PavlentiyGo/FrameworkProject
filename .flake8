@@ -6,3 +6,5 @@ exclude =
     .venv,
     __pycache__
 max-line-length = 79
+per-file-ignores =
+    */migrations/*.py:E501

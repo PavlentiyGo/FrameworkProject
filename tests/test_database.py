@@ -16,6 +16,7 @@ from db.database import (
 )
 from db.import_json import import_data
 from db.queries import fetch_all, fetch_one, load_queries
+from rooms.models import Room
 
 
 def get_response(
@@ -25,12 +26,12 @@ def get_response(
 
 
 def test_import_preserves_ids_relations_and_is_repeatable(
-    web_database: Path,
+    sql_database: Path,
 ) -> None:
-    assert import_data(BASE_DIR / "data", web_database) == {
+    assert import_data(BASE_DIR / "data", sql_database) == {
         "rooms": 0, "users": 0, "conditions": 0, "devices": 0,
     }
-    with closing(get_connection(web_database)) as connection:
+    with closing(get_connection(sql_database)) as connection:
         device = fetch_one(connection, "device", (1,))
         assert device is not None
         assert device["room_id"] == 1
@@ -40,14 +41,14 @@ def test_import_preserves_ids_relations_and_is_repeatable(
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
-def test_all_twelve_catalog_queries_execute(web_database: Path) -> None:
+def test_all_twelve_catalog_queries_execute(sql_database: Path) -> None:
     arguments = {
         "room": (1,), "device": (1,), "room_devices": (1,),
         "search_devices": ("%", "%", "%", None, None, None, None, None, None),
         "room_statistics": (0,), "service_due": (date.today().year,),
     }
     assert len(load_queries()) == 12
-    with closing(get_connection(web_database)) as connection:
+    with closing(get_connection(sql_database)) as connection:
         for name in load_queries():
             rows = fetch_all(connection, name, arguments.get(name, ()))
             assert isinstance(rows, list)
@@ -57,8 +58,8 @@ def test_all_twelve_catalog_queries_execute(web_database: Path) -> None:
         assert totals["total_price"] == pytest.approx(146970.5)
 
 
-def test_foreign_keys_and_constraints_are_enforced(web_database: Path) -> None:
-    with closing(get_connection(web_database)) as connection:
+def test_foreign_keys_and_constraints_are_enforced(sql_database: Path) -> None:
+    with closing(get_connection(sql_database)) as connection:
         assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         for sql in (
             "UPDATE devices SET room_id = 999 WHERE id = 1",
@@ -88,18 +89,18 @@ def import_source(tmp_path: Path) -> Path:
 
 
 def test_conflicting_import_does_not_overwrite_or_partly_insert(
-    web_database: Path, import_source: Path,
+    sql_database: Path, import_source: Path,
 ) -> None:
     rooms_path = import_source / "rooms.json"
     rooms = json.loads(rooms_path.read_text(encoding="utf-8"))
     rooms.insert(0, {"id": 10, "name": "Новая комната"})
     rooms_path.write_text(json.dumps(rooms), encoding="utf-8")
-    with closing(get_connection(web_database)) as connection:
+    with closing(get_connection(sql_database)) as connection:
         connection.execute("UPDATE users SET login = 'changed' WHERE id = 1")
         connection.commit()
     with pytest.raises(ValueError, match="Конфликт"):
-        import_data(import_source, web_database)
-    with closing(get_connection(web_database)) as connection:
+        import_data(import_source, sql_database)
+    with closing(get_connection(sql_database)) as connection:
         assert fetch_one(connection, "room", (10,)) is None
         assert connection.execute(
             "SELECT login FROM users WHERE id = 1"
@@ -138,9 +139,9 @@ def test_empty_database_has_zero_statistics(tmp_path: Path) -> None:
 
 
 def test_empty_and_retired_only_rooms_are_available(
-    web_database: Path,
+    sql_database: Path,
 ) -> None:
-    with closing(get_connection(web_database)) as connection:
+    with closing(get_connection(sql_database)) as connection:
         connection.execute("INSERT INTO rooms VALUES (4, 'Кладовая')")
         connection.execute(
             "UPDATE devices SET condition_id = "
@@ -207,18 +208,16 @@ def test_statistics_having_filter_and_invalid_input(client: Client) -> None:
     assert 'class="errorlist"' in response.content.decode()
 
 
-def test_web_pages_show_changes_from_sqlite(
+def test_web_pages_show_changes_from_orm(
     client: Client, web_database: Path,
 ) -> None:
-    with closing(get_connection(web_database)) as connection:
-        connection.execute("UPDATE rooms SET name = 'Офис' WHERE id = 1")
-        connection.commit()
+    Room.objects.filter(pk=1).update(name="Офис")
     assertContains(get_response(client, "/rooms/"), "Офис")
     assertContains(get_response(client, "/devices/1/"), "Офис")
 
 
-def test_service_query_matches_domain_rules(web_database: Path) -> None:
-    with closing(get_connection(web_database)) as connection:
+def test_service_query_matches_domain_rules(sql_database: Path) -> None:
+    with closing(get_connection(sql_database)) as connection:
         due_now = fetch_all(connection, "service_due", (2026,))
         assert {row["id"] for row in due_now} == {1}
         due_later = fetch_all(connection, "service_due", (2035,))

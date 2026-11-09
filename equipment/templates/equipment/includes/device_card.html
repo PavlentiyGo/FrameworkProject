@@ -4,11 +4,11 @@
             <h2 class="h5 card-title">
                 <a href="{% url 'equipment:device_detail' device.id %}">{{ device.name|default:"Без названия" }}</a>
             </h2>
-            {% include "equipment/includes/device_condition.html" with condition=device.condition only %}
+            {% include "equipment/includes/device_condition.html" with condition=device.condition.name only %}
         </div>
         <p class="card-text text-secondary mb-0">
             {{ device.device_type }} ·
-            <a href="{% url 'rooms:room_detail' device.room_id %}">{{ device.room_name|default:"Без названия" }}</a>
+            <a href="{% url 'rooms:room_detail' device.room_id %}">{{ device.room.name|default:"Без названия" }}</a>
         </p>
     </div>
 </article>

@@ -9,12 +9,24 @@ from models import Device, Room
 
 
 @pytest.fixture
-def web_database(tmp_path: Path, settings: Settings) -> Path:
-    """Каждый веб-тест работает с отдельной предметной SQLite-базой."""
+def sql_database(tmp_path: Path, settings: Settings) -> Path:
+    """Изолированная исходная SQLite-база для проверок кода ПР7."""
     database = tmp_path / "appliances.sqlite"
     import_data(BASE_DIR / "data", database)
     settings.APPLIANCES_DB_PATH = database
     return database
+
+
+@pytest.fixture
+def web_database(db, sql_database: Path, settings: Settings) -> Path:
+    """Веб-тесты используют тестовую ORM-базу Django, не рабочую db.sqlite3."""
+    from db.orm_import import import_pr7
+
+    settings.PASSWORD_HASHERS = [
+        "django.contrib.auth.hashers.MD5PasswordHasher",
+    ]
+    import_pr7(sql_database)
+    return sql_database
 
 
 @pytest.fixture

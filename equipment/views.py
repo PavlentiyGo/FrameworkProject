@@ -1,106 +1,72 @@
-from contextlib import closing
-from datetime import date
-from typing import cast
+from typing import Any, cast
 
 from django import forms
-from django.conf import settings
+from django.core.paginator import Paginator
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from db.database import get_connection
-from db.queries import fetch_all, fetch_one
+from conditions.models import Condition
+from equipment import queries
 from equipment.forms import DeviceSearchForm, StatisticsForm
-from models import Device, Room
+from equipment.models import Device
+
+
+def _listing_context(
+    request: HttpRequest, *, search_only: bool = False,
+) -> dict[str, Any]:
+    form = DeviceSearchForm(request.GET if request.GET else None)
+    cast(forms.ChoiceField, form.fields["condition"]).choices = [
+        ("", "Любое состояние"),
+        *Condition.objects.values_list("name", "name"),
+    ]
+    valid = form.is_valid() if form.is_bound else True
+    searched = valid and (form.is_bound or not search_only)
+    data = form.cleaned_data if form.is_bound and valid else {}
+    devices = (
+        queries.filter_devices(data) if searched else Device.objects.none()
+    )
+    paginator = Paginator(devices, data.get("page_size") or 10)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    parameters = request.GET.copy()
+    parameters.pop("page", None)
+    return {
+        "form": form, "searched": searched,
+        "devices": page_obj.object_list, "page_obj": page_obj,
+        "query_string": parameters.urlencode(),
+    }
 
 
 def device_list(request: HttpRequest) -> HttpResponse:
-    with closing(get_connection(settings.APPLIANCES_DB_PATH)) as connection:
-        context = {"devices": fetch_all(connection, "devices")}
-    return render(request, "equipment/device_list.html", context)
+    return render(request, "equipment/device_list.html",
+                  _listing_context(request))
 
 
-def device_detail(
-    request: HttpRequest,
-    device_id: int,
-) -> HttpResponse:
-    with closing(get_connection(settings.APPLIANCES_DB_PATH)) as connection:
-        device = fetch_one(connection, "device", (device_id,))
-    # Существующая предметная логика ПР3 остаётся общей для CLI и сайта.
-    domain_device = (
-        Device.from_dict(
-            dict(device), Room(device["room_id"], device["room_name"])
-        )
-        if device is not None else None
-    )
-    context = {
+def device_detail(request: HttpRequest, device_id: int) -> HttpResponse:
+    try:
+        device = queries.get_device(device_id)
+    except Device.DoesNotExist:
+        device = None
+    return render(request, "equipment/device_detail.html", {
         "device": device,
-        "service_status": (
-            domain_device.get_service_status() if domain_device else ""
-        ),
-        "is_available": (
-            domain_device.is_available() if domain_device else False
-        ),
-    }
-    return render(
-        request,
-        "equipment/device_detail.html",
-        context,
-        status=404 if device is None else 200,
-    )
+        "service_status": device.get_service_status() if device else "",
+        "is_available": device.is_available() if device else False,
+    }, status=404 if device is None else 200)
 
 
 def device_search(request: HttpRequest) -> HttpResponse:
-    with closing(get_connection(settings.APPLIANCES_DB_PATH)) as connection:
-        rooms = fetch_all(connection, "rooms")
-        conditions = fetch_all(connection, "conditions")
-        form = DeviceSearchForm(request.GET if request.GET else None)
-        cast(forms.ChoiceField, form.fields["room_id"]).choices = [
-            ("", "Все помещения"),
-            *((str(room["id"]), room["name"]) for room in rooms),
-        ]
-        cast(forms.ChoiceField, form.fields["condition"]).choices = [
-            ("", "Любое состояние"),
-            *((row["name"], row["name"]) for row in conditions),
-        ]
-        devices = []
-        if form.is_bound and form.is_valid():
-            data = form.cleaned_data
-            # LIKE ищет подстроку: пользовательские %, _ и \ экранируются.
-            term = data["q"].replace("\\", "\\\\")
-            pattern = "%" + term.replace("%", "\\%").replace("_", "\\_") + "%"
-            room_id = int(data["room_id"]) if data["room_id"] else None
-            condition = data["condition"] or None
-            price = (
-                float(data["max_price"])
-                if data["max_price"] is not None else None
-            )
-            devices = fetch_all(connection, "search_devices", (
-                pattern, pattern, pattern, room_id, room_id,
-                condition, condition, price, price,
-            ))
-    return render(request, "equipment/device_search.html", {
-        "form": form, "devices": devices,
-        "searched": form.is_bound and not form.errors,
-    })
+    return render(request, "equipment/device_search.html",
+                  _listing_context(request, search_only=True))
 
 
 def statistics(request: HttpRequest) -> HttpResponse:
     form = StatisticsForm(request.GET)
     valid = form.is_valid()
-    with closing(get_connection(settings.APPLIANCES_DB_PATH)) as connection:
-        context = {
-            "form": form,
-            "totals": fetch_one(connection, "device_totals"),
-            "room_statistics": (
-                fetch_all(connection, "room_statistics", (
-                    form.cleaned_data["min_count"] or 0,
-                )) if valid else []
-            ),
-            "condition_statistics": fetch_all(
-                connection, "condition_statistics"
-            ),
-            "service_due": fetch_all(
-                connection, "service_due", (date.today().year,)
-            ),
-        }
-    return render(request, "equipment/statistics.html", context)
+    return render(request, "equipment/statistics.html", {
+        "form": form, "totals": queries.device_totals(),
+        "room_statistics": (
+            queries.room_statistics(form.cleaned_data["min_count"] or 0)
+            if valid else []
+        ),
+        "condition_statistics": queries.condition_statistics(),
+        "service_due": queries.service_due(),
+    })

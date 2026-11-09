@@ -20,6 +20,8 @@ INSTALLED_APPS = [
     "homepage",
     "equipment",
     "rooms",
+    "conditions",
+    "users",
 ]
 
 MIDDLEWARE = [

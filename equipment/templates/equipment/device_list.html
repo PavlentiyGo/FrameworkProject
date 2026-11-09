@@ -5,7 +5,15 @@
 {% block content %}
     <h1 class="mb-3">Устройства</h1>
     <p><a href="{% url 'equipment:device_search' %}" class="btn btn-outline-primary">Поиск и фильтры</a></p>
-    <p class="text-secondary">Всего устройств: {{ devices|length }}</p>
+    <details class="mb-3"{% if form.is_bound %} open{% endif %}>
+        <summary>Фильтры и сортировка</summary>
+        <form method="get" class="card card-body mt-2">
+            {{ form.as_p }}
+            <div><button type="submit" class="btn btn-primary">Применить</button>
+            <a href="{% url 'equipment:device_list' %}" class="btn btn-outline-secondary">Сбросить</a></div>
+        </form>
+    </details>
+    <p class="text-secondary">Всего устройств: {{ page_obj.paginator.count }}</p>
     <div class="device-list">
         {% for device in devices %}
             {% include "equipment/includes/device_card.html" with device=device only %}
@@ -13,4 +21,5 @@
             <div class="alert alert-info" role="status">Устройства не найдены.</div>
         {% endfor %}
     </div>
+    {% include "includes/pagination.html" with page_obj=page_obj query_string=query_string only %}
 {% endblock %}

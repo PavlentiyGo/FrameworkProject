@@ -1,4 +1,3 @@
-from contextlib import closing
 from pathlib import Path
 from typing import cast
 
@@ -10,8 +9,9 @@ from django.test import Client, override_settings
 from django.urls import reverse
 from pytest_django.asserts import assertContains, assertTemplateUsed
 
-from db.database import get_connection
+from equipment.models import Device
 from models import CONDITIONS
+from rooms.models import Room
 
 
 pytestmark = pytest.mark.usefixtures("web_database")
@@ -99,18 +99,14 @@ def test_missing_objects_and_urls_use_templates(
 def test_empty_sqlite_collections(
     client: Client, web_database: Path,
 ) -> None:
-    with closing(get_connection(web_database)) as connection:
-        connection.execute("DELETE FROM devices")
-        connection.execute("DELETE FROM rooms")
-        connection.commit()
+    Device.objects.all().delete()
+    Room.objects.all().delete()
     assertContains(get_response(client, "/rooms/"), "Помещения не найдены.")
     assertContains(get_response(client, "/devices/"), "Устройства не найдены.")
 
 
 def test_room_without_devices(client: Client, web_database: Path) -> None:
-    with closing(get_connection(web_database)) as connection:
-        connection.execute("DELETE FROM devices")
-        connection.commit()
+    Device.objects.all().delete()
     assertContains(get_response(client, "/rooms/1/"), "Устройств пока нет.")
     assertContains(get_response(client, "/rooms/"), "Устройств: 0")
 
@@ -130,13 +126,9 @@ def test_device_condition_fragment_in_all_views(
     condition: str,
     css_class: str,
 ) -> None:
-    with closing(get_connection(web_database)) as connection:
-        connection.execute(
-            "UPDATE devices SET condition_id = "
-            "(SELECT id FROM conditions WHERE name = ?) WHERE id = ?",
-            (condition, 1),
-        )
-        connection.commit()
+    device = Device.objects.get(pk=1)
+    device.change_condition(condition)
+    device.save()
     for url in ("/devices/", "/devices/1/", "/rooms/1/"):
         response = get_response(client, url)
         assertTemplateUsed(
@@ -170,11 +162,7 @@ def test_sqlite_names_are_escaped(
     web_database: Path,
 ) -> None:
     name = '<script>alert("name")</script>'
-    with closing(get_connection(web_database)) as connection:
-        connection.execute(
-            "UPDATE devices SET name = ? WHERE id = ?", (name, 1)
-        )
-        connection.commit()
+    Device.objects.filter(pk=1).update(name=name)
     for url in ("/devices/", "/devices/1/", "/rooms/1/"):
         content = get_response(client, url).content.decode("utf-8")
         assert "&lt;script&gt;" in content
