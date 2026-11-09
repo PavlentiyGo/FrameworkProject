@@ -26,6 +26,8 @@ class ProjectUserAdmin(admin.ModelAdmin):
     form = ProjectUserForm
     list_display = ("id", "login")
     search_fields = ("login",)
+    ordering = ("login", "pk")
+    list_per_page = 10
 
     def save_model(self, request, obj, form, change):
         password = form.cleaned_data.get("new_password")

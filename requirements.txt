@@ -4,3 +4,5 @@ flake8>=7.0
 pyright>=1.1.0
 Django==5.2.*
 django-stubs==5.2.*
+django-debug-toolbar==6.2.*
+Unidecode==1.4.*

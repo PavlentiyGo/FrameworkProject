@@ -7,6 +7,9 @@
     <dl class="row">
         <dt class="col-sm-6">Всего устройств</dt><dd class="col-sm-6">{{ totals.total_devices }}</dd>
         <dt class="col-sm-6">Исправных устройств</dt><dd class="col-sm-6">{{ totals.available_count }}</dd>
+        <dt class="col-sm-6">Требуют обслуживания по состоянию</dt><dd class="col-sm-6">{{ totals.service_count }}</dd>
+        <dt class="col-sm-6">В ремонте</dt><dd class="col-sm-6">{{ totals.repair_count }}</dd>
+        <dt class="col-sm-6">Списано</dt><dd class="col-sm-6">{{ totals.retired_count }}</dd>
         <dt class="col-sm-6">Стоимость действующей техники</dt><dd class="col-sm-6">{{ totals.total_price|floatformat:"2" }} ₽</dd>
         <dt class="col-sm-6">Средняя стоимость действующей техники</dt><dd class="col-sm-6">{{ totals.average_price|floatformat:"2" }} ₽</dd>
         <dt class="col-sm-6">Годы покупки</dt><dd class="col-sm-6">{{ totals.oldest_year|default_if_none:"—" }} — {{ totals.newest_year|default_if_none:"—" }}</dd>
@@ -22,7 +25,7 @@
             <thead><tr><th scope="col">Помещение</th><th scope="col">Устройств</th><th scope="col">Стоимость действующей техники</th></tr></thead>
             <tbody>
                 {% for row in room_statistics %}
-                    <tr><td><a href="{% url 'rooms:room_detail' row.id %}">{{ row.name }}</a></td><td>{{ row.device_count }}</td><td>{{ row.total_price|floatformat:"2" }} ₽</td></tr>
+                    <tr><td><a href="{{ row.get_absolute_url }}">{{ row.name }}</a></td><td>{{ row.device_count }}</td><td>{{ row.total_price|floatformat:"2" }} ₽</td></tr>
                 {% empty %}
                     <tr><td colspan="3">Нет помещений, соответствующих условиям.</td></tr>
                 {% endfor %}
@@ -46,7 +49,7 @@
     <p class="text-secondary">По состоянию устройства или возрасту с учётом интервала обслуживания. Устройства в ремонте и списанные исключены.</p>
     <ul>
         {% for device in service_due %}
-            <li><a href="{% url 'equipment:device_detail' device.id %}">{{ device.name }}</a> — {{ device.room.name }}</li>
+            <li><a href="{% url 'equipment:device_detail' device.id %}">{{ device.name }}</a> — {{ device.room_name }}, {{ device.condition_label }}; плановый год: {{ device.next_service_year|stringformat:"d" }}</li>
         {% empty %}
             <li>Нет устройств, требующих обслуживания.</li>
         {% endfor %}

@@ -5,3 +5,4 @@ __pycache__/
 .idea/
 db.sqlite3
 *.pr9-backup
+*.pr10-backup

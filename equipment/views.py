@@ -68,5 +68,5 @@ def statistics(request: HttpRequest) -> HttpResponse:
             if valid else []
         ),
         "condition_statistics": queries.condition_statistics(),
-        "service_due": queries.service_due(),
+        "service_due": queries.service_due_rows(),
     })

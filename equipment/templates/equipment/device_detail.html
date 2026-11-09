@@ -20,7 +20,7 @@
                     <dd class="col-sm-8">{{ device.price|floatformat:"2" }} ₽</dd>
                     <dt class="col-sm-4">Помещение</dt>
                     <dd class="col-sm-8">
-                        <a href="{% url 'rooms:room_detail' device.room_id %}">{{ device.room.name }}</a>
+                        <a href="{{ device.room.get_absolute_url }}">{{ device.room.name }}</a>
                     </dd>
                     <dt class="col-sm-4">Состояние</dt>
                     <dd class="col-sm-8">
@@ -30,6 +30,8 @@
                     <dd class="col-sm-8">{% if is_available %}Доступно для использования{% else %}Недоступно для использования{% endif %}</dd>
                     <dt class="col-sm-4">Обслуживание</dt>
                     <dd class="col-sm-8">{{ service_status }}</dd>
+                    <dt class="col-sm-4">Плановый год обслуживания</dt>
+                    <dd class="col-sm-8">{{ device.next_service_year|stringformat:"d" }}</dd>
                 </dl>
             </div>
         </div>

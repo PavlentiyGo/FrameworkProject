@@ -1,6 +1,6 @@
 from django.db.models import Count
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404, render
 
 from equipment.queries import empty_rooms
 from rooms.models import Room
@@ -17,10 +17,13 @@ def room_list(request: HttpRequest) -> HttpResponse:
     })
 
 
-def room_detail(request: HttpRequest, room_id: int) -> HttpResponse:
+def room_detail(
+    request: HttpRequest, room_id: int | None = None, slug: str | None = None,
+) -> HttpResponse:
     try:
-        room = Room.objects.get(pk=room_id)
-    except Room.DoesNotExist:
+        lookup = {"slug": slug} if slug is not None else {"pk": room_id}
+        room = get_object_or_404(Room, **lookup)
+    except Http404:
         room = None
     devices = room.devices.select_related("room", "condition") if room else []
     return render(request, "rooms/room_detail.html", {

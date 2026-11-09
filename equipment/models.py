@@ -2,13 +2,14 @@
 
 from datetime import date
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
 from conditions.models import Condition
+from equipment.managers import DeviceManager
 from models import Device as LegacyDevice
 from models import Room as LegacyRoom
 
@@ -41,8 +42,15 @@ class Device(models.Model):
     service_interval = models.PositiveIntegerField(
         "Интервал обслуживания, лет", default=3,
         validators=[MinValueValidator(1)],
+        help_text="Плановый интервал по возрасту, не история ремонтов.",
     )
-    objects = models.Manager["Device"]()
+    next_service_year = models.GeneratedField(
+        expression=models.F("purchase_year") + models.F("service_interval"),
+        output_field=models.PositiveIntegerField(), db_persist=True,
+        verbose_name="Плановый год обслуживания",
+    )
+    # Узкое исключение для invariant Model.objects в django-stubs.
+    objects: ClassVar[DeviceManager] = DeviceManager()  # type: ignore
     if TYPE_CHECKING:
         room_id: int
         condition_id: int
@@ -67,7 +75,7 @@ class Device(models.Model):
         ]
 
     def is_available(self) -> bool:
-        return self.condition.name == "исправно"
+        return self.condition.code == Condition.Code.WORKING
 
     def get_service_status(self, current_year: int | None = None) -> str:
         # Сохраняем проверенную предметную логику консольной версии ПР3.

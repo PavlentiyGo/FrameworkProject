@@ -7,7 +7,7 @@
     <p>Показаны помещения, в которых нет устройств либо вся техника списана.</p>
     <ul>
         {% for room in rooms %}
-            <li><a href="{% url 'rooms:room_detail' room.id %}">{{ room.name }}</a></li>
+            <li><a href="{{ room.get_absolute_url }}">{{ room.name }}</a></li>
         {% empty %}
             <li>Помещений без действующей техники нет.</li>
         {% endfor %}

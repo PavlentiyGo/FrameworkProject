@@ -142,7 +142,7 @@ def test_filters_and_related_links(client: Client) -> None:
     assertContains(get_response(client, "/rooms/"), "Всего помещений: 3")
     response = get_response(client, "/devices/1/")
     assertContains(response, "45990,50 ₽")
-    room_url = reverse("rooms:room_detail", args=[1])
+    room_url = Room.objects.get(pk=1).get_absolute_url()
     assertContains(response, f'href="{room_url}"')
     assertContains(response, "2022")
 

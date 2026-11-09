@@ -25,6 +25,7 @@ def _save_new(candidate: models.Model) -> int:
             getattr(existing, field.attname)
             != getattr(candidate, field.attname)
             for field in candidate._meta.fields
+            if not field.generated and field.name != "slug"
         ):
             raise ValueError(
                 f"Конфликт {candidate._meta.label} ID={candidate.pk}. "
@@ -65,7 +66,8 @@ def import_pr7(source: Path) -> dict[str, int]:
         counts["rooms"] += _save_new(Room(id=row["id"], name=row["name"]))
     for row in rows["conditions"]:
         counts["conditions"] += _save_new(
-            Condition(id=row["id"], name=row["name"])
+            Condition(id=row["id"], name=row["name"],
+                      code=Condition.code_for_name(row["name"]))
         )
     for row in rows["users"]:
         user = User(id=row["id"], login=row["login"])

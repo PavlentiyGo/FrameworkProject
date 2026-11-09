@@ -2,6 +2,6 @@
     <div class="card-body">
         <h2 class="h4 card-title">{{ room.name|default:"Без названия" }}</h2>
         <p class="card-text">Устройств: {{ device_count }}</p>
-        <a href="{% url 'rooms:room_detail' room.id %}" class="btn btn-primary">Подробнее</a>
+        <a href="{% if room.get_absolute_url %}{{ room.get_absolute_url }}{% else %}{% url 'rooms:room_detail' room.id %}{% endif %}" class="btn btn-primary">Подробнее</a>
     </div>
 </article>
