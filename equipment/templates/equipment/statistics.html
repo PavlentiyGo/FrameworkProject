@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика · Учёт техники{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Статистика техники</h1>
+    <dl class="row">
+        <dt class="col-sm-6">Всего устройств</dt><dd class="col-sm-6">{{ totals.total_devices }}</dd>
+        <dt class="col-sm-6">Исправных устройств</dt><dd class="col-sm-6">{{ totals.available_count }}</dd>
+        <dt class="col-sm-6">Стоимость действующей техники</dt><dd class="col-sm-6">{{ totals.total_price|floatformat:"2" }} ₽</dd>
+        <dt class="col-sm-6">Средняя стоимость действующей техники</dt><dd class="col-sm-6">{{ totals.average_price|floatformat:"2" }} ₽</dd>
+        <dt class="col-sm-6">Годы покупки</dt><dd class="col-sm-6">{{ totals.oldest_year|default_if_none:"—" }} — {{ totals.newest_year|default_if_none:"—" }}</dd>
+    </dl>
+    <p class="text-secondary">Списанные устройства учитываются в количестве, но не в стоимости действующей техники.</p>
+    <h2 class="h4">По помещениям</h2>
+    <form method="get" class="mb-3">
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-outline-primary">Применить</button>
+    </form>
+    <div class="table-responsive">
+        <table class="table">
+            <thead><tr><th scope="col">Помещение</th><th scope="col">Устройств</th><th scope="col">Стоимость действующей техники</th></tr></thead>
+            <tbody>
+                {% for row in room_statistics %}
+                    <tr><td><a href="{% url 'rooms:room_detail' row.id %}">{{ row.name }}</a></td><td>{{ row.device_count }}</td><td>{{ row.total_price|floatformat:"2" }} ₽</td></tr>
+                {% empty %}
+                    <tr><td colspan="3">Нет помещений, соответствующих условиям.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <h2 class="h4">По состояниям</h2>
+    <div class="table-responsive">
+        <table class="table">
+            <thead><tr><th scope="col">Состояние</th><th scope="col">Устройств</th><th scope="col">Стоимость</th></tr></thead>
+            <tbody>
+                {% for row in condition_statistics %}
+                    <tr><td>{{ row.name }}</td><td>{{ row.device_count }}</td><td>{{ row.total_price|floatformat:"2" }} ₽</td></tr>
+                {% empty %}
+                    <tr><td colspan="3">Состояния не найдены.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <h2 class="h4">Требуется обслуживание</h2>
+    <p class="text-secondary">По состоянию устройства или возрасту с учётом интервала обслуживания. Устройства в ремонте и списанные исключены.</p>
+    <ul>
+        {% for device in service_due %}
+            <li><a href="{% url 'equipment:device_detail' device.id %}">{{ device.name }}</a> — {{ device.room_name }}</li>
+        {% empty %}
+            <li>Нет устройств, требующих обслуживания.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

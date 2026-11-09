@@ -20,7 +20,7 @@
                     <dd class="col-sm-8">{{ device.price|floatformat:"2" }} ₽</dd>
                     <dt class="col-sm-4">Помещение</dt>
                     <dd class="col-sm-8">
-                        <a href="{% url 'rooms:room_detail' device.room.id %}">{{ device.room.name }}</a>
+                        <a href="{% url 'rooms:room_detail' device.room_id %}">{{ device.room_name }}</a>
                     </dd>
                     <dt class="col-sm-4">Состояние</dt>
                     <dd class="col-sm-8">

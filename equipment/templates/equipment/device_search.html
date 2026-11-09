@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Поиск техники · Учёт техники{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Поиск техники</h1>
+    <p>Выберите состояние «исправно», чтобы найти устройства, доступные для использования.</p>
+    <form method="get" class="card card-body mb-4">
+        {{ form.as_p }}
+        <div><button type="submit" class="btn btn-primary">Найти</button>
+        <a href="{% url 'equipment:device_search' %}" class="btn btn-outline-secondary">Сбросить</a></div>
+    </form>
+    {% if searched %}
+        <p>Найдено устройств: {{ devices|length }}</p>
+        {% for device in devices %}
+            {% include "equipment/includes/device_card.html" with device=device only %}
+        {% empty %}
+            <div class="alert alert-info" role="status">По заданным условиям устройства не найдены.</div>
+        {% endfor %}
+    {% elif not form.is_bound %}
+        <p>Задайте условия поиска и нажмите «Найти». Пустые поля не ограничивают выборку.</p>
+    {% endif %}
+{% endblock %}

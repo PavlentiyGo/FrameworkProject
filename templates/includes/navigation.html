@@ -22,6 +22,8 @@
                     href="{% url 'rooms:room_list' %}"
                     {% if current_app == 'rooms' %}aria-current="page"{% endif %}
                 >Помещения</a>
+                <a class="nav-link" href="{% url 'equipment:device_search' %}">Поиск техники</a>
+                <a class="nav-link" href="{% url 'equipment:statistics' %}">Статистика</a>
             </div>
         {% endwith %}
     </div>

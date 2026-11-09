@@ -1,6 +1,20 @@
-import pytest
+from pathlib import Path
 
+import pytest
+from pytest_django.fixtures import Settings
+
+from db.database import BASE_DIR
+from db.import_json import import_data
 from models import Device, Room
+
+
+@pytest.fixture
+def web_database(tmp_path: Path, settings: Settings) -> Path:
+    """Каждый веб-тест работает с отдельной предметной SQLite-базой."""
+    database = tmp_path / "appliances.sqlite"
+    import_data(BASE_DIR / "data", database)
+    settings.APPLIANCES_DB_PATH = database
+    return database
 
 
 @pytest.fixture

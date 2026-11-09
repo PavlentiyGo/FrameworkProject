@@ -4,6 +4,7 @@
 
 {% block content %}
     <h1 class="mb-3">Помещения</h1>
+    <p><a href="{% url 'rooms:available_rooms' %}">Помещения без действующей техники</a></p>
     <p class="text-secondary">Всего помещений: {{ rooms|length }}</p>
     <div class="row">
         {% for card in room_cards %}

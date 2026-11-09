@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+APPLIANCES_DB_PATH = BASE_DIR / "data" / "appliances.sqlite"
 
 SECRET_KEY = "django-insecure-pr5-local-development-only"
 DEBUG = False

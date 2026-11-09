@@ -1,3 +1,4 @@
+from contextlib import closing
 from pathlib import Path
 from typing import cast
 
@@ -9,8 +10,11 @@ from django.test import Client, override_settings
 from django.urls import reverse
 from pytest_django.asserts import assertContains, assertTemplateUsed
 
-from models import CONDITIONS, Device, Room
-from storage import save_devices, save_rooms
+from db.database import get_connection
+from models import CONDITIONS
+
+
+pytestmark = pytest.mark.usefixtures("web_database")
 
 
 def get_response(client: Client, url: str) -> HttpResponse:
@@ -92,28 +96,23 @@ def test_missing_objects_and_urls_use_templates(
     assertContains(response, message, status_code=404)
 
 
-def test_empty_json_collections(client: Client, tmp_path: Path) -> None:
-    save_rooms(tmp_path / "data" / "rooms.json", [])
-    save_devices(tmp_path / "data" / "devices.json", [])
-
-    with override_settings(BASE_DIR=tmp_path):
-        assertContains(
-            get_response(client, "/rooms/"), "Помещения не найдены."
-        )
-        assertContains(
-            get_response(client, "/devices/"), "Устройства не найдены."
-        )
+def test_empty_sqlite_collections(
+    client: Client, web_database: Path,
+) -> None:
+    with closing(get_connection(web_database)) as connection:
+        connection.execute("DELETE FROM devices")
+        connection.execute("DELETE FROM rooms")
+        connection.commit()
+    assertContains(get_response(client, "/rooms/"), "Помещения не найдены.")
+    assertContains(get_response(client, "/devices/"), "Устройства не найдены.")
 
 
-def test_room_without_devices(client: Client, tmp_path: Path) -> None:
-    save_rooms(tmp_path / "data" / "rooms.json", [Room(1, "Кладовая")])
-    save_devices(tmp_path / "data" / "devices.json", [])
-
-    with override_settings(BASE_DIR=tmp_path):
-        assertContains(
-            get_response(client, "/rooms/1/"), "Устройств пока нет."
-        )
-        assertContains(get_response(client, "/rooms/"), "Устройств: 0")
+def test_room_without_devices(client: Client, web_database: Path) -> None:
+    with closing(get_connection(web_database)) as connection:
+        connection.execute("DELETE FROM devices")
+        connection.commit()
+    assertContains(get_response(client, "/rooms/1/"), "Устройств пока нет.")
+    assertContains(get_response(client, "/rooms/"), "Устройств: 0")
 
 
 @pytest.mark.parametrize(
@@ -127,25 +126,24 @@ def test_room_without_devices(client: Client, tmp_path: Path) -> None:
 )
 def test_device_condition_fragment_in_all_views(
     client: Client,
-    tmp_path: Path,
-    sample_devices: list[Device],
-    sample_rooms: list[Room],
+    web_database: Path,
     condition: str,
     css_class: str,
 ) -> None:
-    device = sample_devices[0]
-    device.change_condition(condition)
-    save_rooms(tmp_path / "data" / "rooms.json", sample_rooms)
-    save_devices(tmp_path / "data" / "devices.json", [device])
-
-    with override_settings(BASE_DIR=tmp_path):
-        for url in ("/devices/", "/devices/1/", "/rooms/1/"):
-            response = get_response(client, url)
-            assertTemplateUsed(
-                response, "equipment/includes/device_condition.html"
-            )
-            assertContains(response, condition)
-            assertContains(response, css_class)
+    with closing(get_connection(web_database)) as connection:
+        connection.execute(
+            "UPDATE devices SET condition_id = "
+            "(SELECT id FROM conditions WHERE name = ?) WHERE id = ?",
+            (condition, 1),
+        )
+        connection.commit()
+    for url in ("/devices/", "/devices/1/", "/rooms/1/"):
+        response = get_response(client, url)
+        assertTemplateUsed(
+            response, "equipment/includes/device_condition.html"
+        )
+        assertContains(response, condition)
+        assertContains(response, css_class)
 
 
 def test_filters_and_related_links(client: Client) -> None:
@@ -167,21 +165,20 @@ def test_default_filter_in_room_card() -> None:
     assert reverse("rooms:room_detail", args=[1]) in content
 
 
-def test_json_names_are_escaped(
+def test_sqlite_names_are_escaped(
     client: Client,
-    tmp_path: Path,
-    sample_devices: list[Device],
-    sample_rooms: list[Room],
+    web_database: Path,
 ) -> None:
-    sample_devices[0].name = '<script>alert("name")</script>'
-    save_rooms(tmp_path / "data" / "rooms.json", sample_rooms)
-    save_devices(tmp_path / "data" / "devices.json", sample_devices)
-
-    with override_settings(BASE_DIR=tmp_path):
-        for url in ("/devices/", "/devices/1/", "/rooms/1/"):
-            content = get_response(client, url).content.decode("utf-8")
-            assert "&lt;script&gt;" in content
-            assert sample_devices[0].name not in content
+    name = '<script>alert("name")</script>'
+    with closing(get_connection(web_database)) as connection:
+        connection.execute(
+            "UPDATE devices SET name = ? WHERE id = ?", (name, 1)
+        )
+        connection.commit()
+    for url in ("/devices/", "/devices/1/", "/rooms/1/"):
+        content = get_response(client, url).content.decode("utf-8")
+        assert "&lt;script&gt;" in content
+        assert name not in content
 
 
 @pytest.mark.parametrize(

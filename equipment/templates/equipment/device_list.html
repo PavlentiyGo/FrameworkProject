@@ -4,6 +4,7 @@
 
 {% block content %}
     <h1 class="mb-3">Устройства</h1>
+    <p><a href="{% url 'equipment:device_search' %}" class="btn btn-outline-primary">Поиск и фильтры</a></p>
     <p class="text-secondary">Всего устройств: {{ devices|length }}</p>
     <div class="device-list">
         {% for device in devices %}

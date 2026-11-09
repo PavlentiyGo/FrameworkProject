@@ -5,6 +5,9 @@ from django.http import HttpResponse
 from django.test import Client, override_settings
 
 
+pytestmark = pytest.mark.usefixtures("web_database")
+
+
 def get_response(client: Client, url: str) -> HttpResponse:
     """Уточнить тип ответа Django Client для статического анализатора."""
     return cast(HttpResponse, client.get(url))

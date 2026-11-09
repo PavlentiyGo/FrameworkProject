@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Помещения без техники · Учёт техники{% endblock %}
+
+{% block content %}
+    <h1 class="mb-3">Помещения без действующей техники</h1>
+    <p>Показаны помещения, в которых нет устройств либо вся техника списана.</p>
+    <ul>
+        {% for room in rooms %}
+            <li><a href="{% url 'rooms:room_detail' room.id %}">{{ room.name }}</a></li>
+        {% empty %}
+            <li>Помещений без действующей техники нет.</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'rooms:room_list' %}" class="btn btn-outline-secondary">Все помещения</a>
+{% endblock %}
