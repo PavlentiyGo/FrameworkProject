@@ -27,6 +27,7 @@ class DeviceAdmin(admin.ModelAdmin):
         ("Стоимость и обслуживание", {"fields": (
             "price", "purchase_year", "service_interval", "next_service_year",
         )}),
+        ("Примечание", {"fields": ("notes",)}),
     )
     actions = ("mark_for_service", "retire_devices")
 

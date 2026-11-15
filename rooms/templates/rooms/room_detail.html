@@ -5,6 +5,8 @@
 {% block content %}
     {% if room %}
         <h1 class="mb-3">{{ room.name }}</h1>
+        {% if room.photo %}<img src="{{ room.photo.url }}" alt="Фотография помещения {{ room.name }}" class="img-fluid rounded mb-3" style="max-height: 420px">{% endif %}
+        {% if perms.rooms.change_room %}<p><a href="{% url 'rooms:room_photo' room.slug %}" class="btn btn-outline-primary">Изменить фотографию</a></p>{% endif %}
         <div class="card room-card shadow-sm mb-4">
             <div class="card-body">
                 <p class="card-text"><strong>ID:</strong> {{ room.id }}</p>

@@ -21,6 +21,7 @@ def validate_purchase_year(value: int) -> None:
 
 class Device(models.Model):
     name = models.CharField("Название", max_length=200)
+    notes = models.TextField("Примечание", blank=True, default="")
     device_type = models.CharField("Тип", max_length=100)
     manufacturer = models.CharField("Производитель", max_length=100)
     model = models.CharField("Модель", max_length=100)

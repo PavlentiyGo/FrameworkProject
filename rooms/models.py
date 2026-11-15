@@ -2,14 +2,23 @@
 
 from typing import TYPE_CHECKING
 from uuid import uuid4
+from pathlib import Path
 
+from django.core.validators import FileExtensionValidator
 from django.db import models, transaction
 from django.urls import reverse
 from django.utils.text import slugify
 from unidecode import unidecode
 
+from rooms.validators import validate_photo_size
+
 if TYPE_CHECKING:
     from equipment.models import Device
+
+
+def room_photo_path(instance, filename: str) -> str:
+    extension = Path(filename).suffix.lower()
+    return f"rooms/{instance.pk}/{uuid4().hex}{extension}"
 
 
 class Room(models.Model):
@@ -20,6 +29,13 @@ class Room(models.Model):
     slug = models.SlugField(
         "URL-идентификатор", max_length=180, unique=True,
         blank=True, editable=False,
+    )
+    photo = models.ImageField(
+        "Фотография", upload_to=room_photo_path, blank=True,
+        validators=[validate_photo_size, FileExtensionValidator(
+            allowed_extensions=("jpg", "jpeg", "png", "webp"),
+        )],
+        help_text="JPEG, PNG или WebP, не больше 5 МБ.",
     )
     objects = models.Manager["Room"]()
     if TYPE_CHECKING:

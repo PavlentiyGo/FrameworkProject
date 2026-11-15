@@ -1,0 +1,31 @@
+ПР11 — проверка текущего проекта
+2026-11-15T23:10:50+03:00
+
+$ .venv/bin/python manage.py check
+System check identified no issues (0 silenced).
+
+Код завершения: 0
+
+$ .venv/bin/python manage.py makemigrations --check --dry-run
+No changes detected
+
+Код завершения: 0
+
+$ .venv/bin/python -m pytest -q
+........................................................................ [ 45%]
+........................................................................ [ 91%]
+..............                                                           [100%]
+158 passed in 3.83s
+
+Код завершения: 0
+
+$ .venv/bin/python -m flake8 -j1
+
+
+Код завершения: 0
+
+$ .venv/bin/pyright
+0 errors, 0 warnings, 0 informations
+
+Код завершения: 0
+

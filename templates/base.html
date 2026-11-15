@@ -12,10 +12,11 @@
     <a class="skip-link" href="#main-content">К содержимому</a>
     {% include "includes/navigation.html" %}
     <main id="main-content" class="container site-content">
+        {% for message in messages %}<div class="alert alert-info" role="status">{{ message }}</div>{% endfor %}
         {% block content %}{% endblock %}
     </main>
     <footer class="container site-footer">
-        <p>© <span id="current-year">{% now "Y" %}</span> {{ site_name }} · Практическая работа № 10</p>
+        <p>© <span id="current-year">{% now "Y" %}</span> {{ site_name }} · Практическая работа № 11</p>
     </footer>
     <script src="{% static 'homepage/js/main.js' %}" defer></script>
 </body>

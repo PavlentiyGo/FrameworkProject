@@ -1,13 +1,17 @@
 from typing import Any, cast
 
 from django import forms
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.db import IntegrityError, transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods, require_POST
 
 from conditions.models import Condition
 from equipment import queries
-from equipment.forms import DeviceSearchForm, StatisticsForm
+from equipment.forms import DeviceForm, DeviceSearchForm, StatisticsForm
 from equipment.models import Device
 
 
@@ -70,3 +74,63 @@ def statistics(request: HttpRequest) -> HttpResponse:
         "condition_statistics": queries.condition_statistics(),
         "service_due": queries.service_due_rows(),
     })
+
+
+def _device_form(request: HttpRequest, device: Device | None = None):
+    form = DeviceForm(
+        request.POST if request.method == "POST" else None, instance=device,
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                saved = form.save(commit=False)
+                if device is None:
+                    state, _ = Condition.objects.get_or_create(
+                        code=Condition.Code.WORKING,
+                        defaults={"name": str(Condition.Code.WORKING.label)},
+                    )
+                    saved.condition = state
+                saved.save()
+        except IntegrityError:
+            form.add_error(
+                None, "Не удалось сохранить данные. Проверьте ввод."
+            )
+        else:
+            messages.success(request, "Изменения устройства сохранены.")
+            return redirect("equipment:device_detail", device_id=saved.pk)
+    return render(request, "equipment/device_form.html", {
+        "form": form, "device": device,
+        "heading": (
+            "Редактирование устройства" if device else "Новое устройство"
+        ),
+    })
+
+
+@login_required(login_url="admin:login")
+@permission_required("equipment.add_device", raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def device_create(request: HttpRequest) -> HttpResponse:
+    return _device_form(request)
+
+
+@login_required(login_url="admin:login")
+@permission_required("equipment.change_device", raise_exception=True)
+@require_http_methods(["GET", "POST"])
+def device_edit(request: HttpRequest, device_id: int) -> HttpResponse:
+    device = get_object_or_404(Device.objects.with_related(), pk=device_id)
+    return _device_form(request, device)
+
+
+@require_POST
+@login_required(login_url="admin:login")
+@permission_required("equipment.change_device", raise_exception=True)
+def device_retire(request: HttpRequest, device_id: int) -> HttpResponse:
+    device = get_object_or_404(Device, pk=device_id)
+    with transaction.atomic():
+        state, _ = Condition.objects.get_or_create(
+            code=Condition.Code.RETIRED,
+            defaults={"name": str(Condition.Code.RETIRED.label)},
+        )
+        Device.objects.filter(pk=device.pk).update(condition=state)
+    messages.success(request, "Устройство списано. Запись сохранена.")
+    return redirect("equipment:device_detail", device_id=device.pk)

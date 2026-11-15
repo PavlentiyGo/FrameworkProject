@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Фотография помещения · Учёт техники{% endblock %}
+{% block content %}
+    <h1 class="mb-3">Фотография помещения {{ room.name }}</h1>
+    <form method="post" enctype="multipart/form-data" class="card card-body" novalidate>
+        {% csrf_token %}
+        {% include "includes/form_fields.html" with form=form only %}
+        <div><button type="submit" class="btn btn-primary">Сохранить</button>
+        <a href="{{ room.get_absolute_url }}" class="btn btn-outline-secondary">Отмена</a></div>
+    </form>
+{% endblock %}

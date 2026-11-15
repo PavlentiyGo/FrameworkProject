@@ -6,7 +6,7 @@
     <h1 class="mb-3">Поиск техники</h1>
     <p>Выберите состояние «исправно», чтобы найти устройства, доступные для использования.</p>
     <form method="get" class="card card-body mb-4">
-        {{ form.as_p }}
+        {% include "includes/form_fields.html" with form=form only %}
         <div><button type="submit" class="btn btn-primary">Найти</button>
         <a href="{% url 'equipment:device_search' %}" class="btn btn-outline-secondary">Сбросить</a></div>
     </form>

@@ -5,6 +5,16 @@
 {% block content %}
     {% if device %}
         <h1 class="mb-3">{{ device.name }}</h1>
+        {% if perms.equipment.change_device %}
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a href="{% url 'equipment:device_edit' device.id %}" class="btn btn-outline-primary">Редактировать</a>
+                {% if device.condition.code != 'retired' %}
+                    <form method="post" action="{% url 'equipment:device_retire' device.id %}">
+                        {% csrf_token %}<button class="btn btn-outline-danger" type="submit">Списать устройство</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
         <div class="card device-card shadow-sm">
             <div class="card-body">
                 <dl class="row mb-0 device-properties">
@@ -32,6 +42,7 @@
                     <dd class="col-sm-8">{{ service_status }}</dd>
                     <dt class="col-sm-4">Плановый год обслуживания</dt>
                     <dd class="col-sm-8">{{ device.next_service_year|stringformat:"d" }}</dd>
+                    {% if device.notes %}<dt class="col-sm-4">Примечание</dt><dd class="col-sm-8">{{ device.notes|linebreaksbr }}</dd>{% endif %}
                 </dl>
             </div>
         </div>

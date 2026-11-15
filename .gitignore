@@ -6,3 +6,5 @@ __pycache__/
 db.sqlite3
 *.pr9-backup
 *.pr10-backup
+*.pr11-backup
+/media/
